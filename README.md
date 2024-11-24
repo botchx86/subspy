@@ -10,8 +10,8 @@ subspy is a Python-based tool designed to scan and discover active subdomains fo
 - **Timeout Control:** Configurable timeout for requests to improve efficiency.
 - **File Output:** Output results of the scan to a file.
 
+## Options
 ```
-options:
   -h, --help            show this help message and exit
   -u URL, --url URL     Specify the domain to scan for subdomains
   -w WORDLIST, --wordlist WORDLIST
