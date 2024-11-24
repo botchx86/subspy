@@ -1,6 +1,6 @@
-# SubSpy - Subdomain Scanner
+# subspy - Subdomain Scanner
 
-SubSpy is a Python-based tool designed to scan and discover active subdomains for a given domain using a wordlist. This utility is ideal for penetration testers, bug bounty hunters, and security enthusiasts who need to map the attack surface of a target.
+subspy is a Python-based tool designed to scan and discover active subdomains for a given domain using a wordlist.
 
 ## Features
 
