@@ -3,7 +3,7 @@ import os
 import argparse
 from urllib.parse import urlparse
 
-VERSION = "1.0"
+VERSION = "0.6"
 AUTHOR = "botchx86"
 
 def banner():
@@ -25,8 +25,16 @@ def validateDomain(domain):
     return domain
 
 def isValidSubdomain(sub):
-    # Ensures the subdomain entry is non-empty and properly formatted
-    return sub and all(part.isalnum() for part in sub.split("."))
+    # Ensures the subdomain entry is non-empty and properly formatted (allows hyphens in labels)
+    if not sub:
+        return False
+    return all(
+        part
+        and not part.startswith("-")
+        and not part.endswith("-")
+        and part.replace("-", "").isalnum()
+        for part in sub.split(".")
+    )
 
 def scanSubdomains(domain, wordlist, verbose=False, timeout=5, output_file=None):
     # Scans for subdomains by combining domain with entries in the wordlist.
@@ -56,18 +64,24 @@ def scanSubdomains(domain, wordlist, verbose=False, timeout=5, output_file=None)
 
                 if response.status_code in [200, 301, 302, 403]:
                     print(f"[FOUND] Active subdomain: {subdomain} (status code: {response.status_code})")
+                    results.append(f"{subdomain} (status code: {response.status_code})")
 
             except requests.exceptions.RequestException as e:
                 if verbose:
                     print(f"[*] Subdomain {subdomain} is unreachable")
-                    
+
     if output_file:
         try:
+            os.makedirs(os.path.dirname(output_file), exist_ok=True) if os.path.dirname(output_file) else None
             with open(output_file, 'w') as file:
                 file.write("\n".join(results))
                 
         except IOError as e:
             print(f"[ERROR] Could not write to file {output_file}: {e}")
+
+    print(f"[SUMMARY] {len(results)} active subdomain(s) found.")
+    if output_file and results:
+        print(f"[SUMMARY] Results written to {output_file}")
 
 def Main():
     try:
@@ -82,7 +96,7 @@ def Main():
         PARSER.add_argument("-w", "--wordlist", required=True, help="Add a path to a wordlist file")
         PARSER.add_argument("-v", "--verbose", action="store_true", default=False, help="Enable verbose output")
         PARSER.add_argument("-t", "--timeout", required=False, type=int, default=5, help="Set request timeout in seconds. (Default = 5)")
-        PARSER.add_argument("-o", "--output", required=False, type=str, default=False, help="Prints output to a file")
+        PARSER.add_argument("-o", "--output", required=False, type=str, default=None, help="Prints output to a file")
 
         ARGS = PARSER.parse_args()
 
