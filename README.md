@@ -11,7 +11,7 @@
 
 subspy is a high-performance Python tool designed to discover active subdomains for a given domain using wordlist-based enumeration.
 
-**Current Version: 1.0** | [Changelog](CHANGELOG.md)
+**Current Version: 1.0**
 
 ## Features
 
@@ -272,3 +272,4 @@ This tool is provided for educational and authorized security testing purposes o
 **botchx86**
 
 For questions, issues, or feature requests, please open an issue on GitHub.
+
