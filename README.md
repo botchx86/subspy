@@ -11,23 +11,27 @@
 
 subspy is a high-performance Python tool designed to discover active subdomains for a given domain using wordlist-based enumeration.
 
-**Current Version: 1.0**
+**Current Version: 1.1**
 
 ## Features
 
 ### Core Scanning
 - **DNS Resolution First:** Checks DNS before HTTP requests for 5-10x speed improvement
-- **Concurrent Threading:** Multi-threaded scanning with configurable thread count (default: 10 threads)
+- **DNS Caching:** Shared, cached resolver reuses lookups and respects `--timeout`
+- **Concurrent Threading:** Multi-threaded scanning with configurable thread count (default: 10 threads), each thread reusing a persistent HTTP connection
 - **Progress Bar:** Real-time progress indicator with tqdm
-- **Wildcard Detection:** Automatically detects wildcard DNS to identify false positives
+- **Wildcard Detection & Filtering:** Detects wildcard DNS and automatically excludes results that just match the wildcard IP(s)
 - **Smart Protocol Detection:** Tries HTTPS first, skips HTTP if HTTPS succeeds
+- **Accurate Status Codes:** Redirects are not followed, so reported status codes reflect the subdomain itself instead of whatever it redirects to
+- **IPv4 + IPv6:** Checks both A and AAAA records, so IPv6-only subdomains are found too
 
 ### Advanced Capabilities
-- **Resume Support:** Save progress and resume interrupted scans
+- **Resume Support:** Save progress and resume interrupted scans, including results already found before the interruption
 - **Multiple Output Formats:** Export results as TXT, JSON, or CSV
 - **Configurable Status Codes:** Specify which HTTP status codes to consider as "found"
 - **DNS-Only Mode:** Fast DNS enumeration without HTTP requests
 - **Rate Limiting:** Configurable delay between requests
+- **Automatic Retries:** Transient errors (429/500/502/503/504) are retried with backoff before being counted as a miss
 - **Enhanced Error Handling:** Specific handling for timeouts, connection errors, and DNS failures
 
 ### User Experience
@@ -62,15 +66,17 @@ subspy is a high-performance Python tool designed to discover active subdomains 
   --resume                    Resume a previously interrupted scan
   --format {txt,json,csv}     Output format (Default: txt)
   --no-color                  Disable colored output
+  --version                   Show version and exit
 ```
 
 ## Requirements
 
-- Python 3.7 or later
+- Python 3.8 or later
 - `requests` - HTTP library for making requests
 - `dnspython` - DNS resolution toolkit
 - `tqdm` - Progress bar library
 - `colorama` - Cross-platform colored terminal output
+- `urllib3` - Retry/backoff support for transient HTTP errors
 
 ## Installation
 
@@ -83,6 +89,12 @@ subspy is a high-performance Python tool designed to discover active subdomains 
 2. Install requirements:
    ```bash
    pip install -r requirements.txt
+   ```
+
+   Or install as a package (adds a `subspy` command on your PATH):
+   ```bash
+   pip install .
+   subspy -u example.com -w wordlist.txt
    ```
 
 ## Quick Start
@@ -183,9 +195,9 @@ api.example.com,https,200,"['93.184.216.34']",https://api.example.com
 ## Advanced Features
 
 ### Wildcard Detection
-The tool automatically detects wildcard DNS configurations that resolve all subdomains:
+The tool automatically detects wildcard DNS configurations that resolve all subdomains, and filters out any result that only resolves to the wildcard IP(s):
 ```
-[WARNING] Wildcard DNS detected on example.com. Results may include false positives.
+[WARNING] Wildcard DNS detected on example.com. Matching results will be filtered.
 ```
 
 ### Resume Capability
@@ -249,6 +261,23 @@ All scanning operations are thread-safe, allowing high concurrency without data 
 | Custom Status Codes | ✅ | ❌ | ❌ | ❌ |
 | DNS-Only Mode | ✅ | ✅ | ❌ | ❌ |
 
+## Development
+
+Install dev dependencies and run the test suite:
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+CI runs the same suite on Python 3.9, 3.11, and 3.12 via GitHub Actions on every push and PR.
+
+### Releasing to PyPI
+
+Publishing a GitHub release triggers `.github/workflows/release.yml`, which builds and uploads the package via PyPI's trusted publishing (OIDC) — no stored API token required. This needs a one-time setup on PyPI: add this repository as a trusted publisher for the `subspy` project, using workflow name `release.yml` and environment `pypi`.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for how to report a vulnerability in subspy itself.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -262,6 +291,26 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Changelog
+
+### 1.1
+- Redirects are no longer followed automatically, so `--status-codes` (e.g. 301/302) now reflects the subdomain's actual response instead of the final redirect target
+- Wildcard DNS results are now filtered out instead of just triggering a warning
+- `--timeout` now applies to DNS lookups, not just HTTP requests
+- DNS resolution is cached and HTTP connections are reused per thread for faster scans
+- Domain input is validated against a hostname pattern instead of a loose "contains a dot" check
+- Output files are written with explicit UTF-8 encoding
+- Added `--version` flag and input validation for `--threads`, `--timeout`, `--delay`
+- Pinned minimum dependency versions in `requirements.txt`
+- `--resume` now also restores results found before the interruption, instead of only skipping already-scanned entries
+- Wordlist entries with underscores (e.g. `_dmarc`) are no longer silently dropped as invalid
+- Added retries with backoff for transient HTTP errors (429/500/502/503/504)
+- Added AAAA (IPv6) lookups alongside A records
+- Added packaging (`pyproject.toml`) for `pip install .` with a `subspy` console command
+- Added a pytest suite (including mocked scan-logic tests) and GitHub Actions CI
+- Added a PyPI publish workflow and a SECURITY.md
+- Fixed an unused `delay=0.5` default that never matched the CLI's actual default of `0`
 
 ## Disclaimer
 

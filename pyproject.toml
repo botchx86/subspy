@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "subspy"
+version = "1.1"
+description = "A high-performance subdomain scanner"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+authors = [{name = "botchx86"}]
+dependencies = [
+    "requests>=2.31.0",
+    "dnspython>=2.6.0",
+    "tqdm>=4.66.0",
+    "colorama>=0.4.6",
+    "urllib3>=1.26.0",
+]
+
+[project.scripts]
+subspy = "subs:main"
+
+[tool.setuptools]
+py-modules = ["subs"]
